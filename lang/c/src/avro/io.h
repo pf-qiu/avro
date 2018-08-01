@@ -134,6 +134,9 @@ int
 avro_file_writer_append_encoded(avro_file_writer_t writer,
 				const void *buf, int64_t len);
 
+int
+avro_file_reader_memory(const char* buffer, int64_t len, avro_file_reader_t* reader);
+
 /*
  * Legacy avro_datum_t API
  */

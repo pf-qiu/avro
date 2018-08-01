@@ -472,6 +472,59 @@ static int file_read_block_count(avro_file_reader_t r)
 	return 0;
 }
 
+int avro_file_reader_memory(const char* buffer, int64_t len, avro_file_reader_t* reader)
+{
+	int rval;
+	avro_file_reader_t r = (avro_file_reader_t) avro_new(struct avro_file_reader_t_);
+	if (!r) {
+		avro_set_error("Cannot allocate file reader");
+		return ENOMEM;
+	}
+
+	r->reader = avro_reader_memory(buffer, len);
+	r->block_reader = avro_reader_memory(0, 0);
+	if (!r->block_reader) {
+		avro_set_error("Cannot allocate block reader");
+		avro_reader_free(r->reader);
+		avro_freet(struct avro_file_reader_t_, r);
+		return ENOMEM;
+	}
+
+	r->codec = (avro_codec_t) avro_new(struct avro_codec_t_);
+	if (!r->codec) {
+		avro_set_error("Could not allocate codec");
+		avro_reader_free(r->reader);
+		avro_freet(struct avro_file_reader_t_, r);
+		return ENOMEM;
+	}
+	avro_codec(r->codec, NULL);
+
+	rval = file_read_header(r->reader, &r->writers_schema, r->codec,
+				r->sync, sizeof(r->sync));
+	if (rval) {
+		avro_reader_free(r->reader);
+		avro_codec_reset(r->codec);
+		avro_freet(struct avro_codec_t_, r->codec);
+		avro_freet(struct avro_file_reader_t_, r);
+		return rval;
+	}
+
+	r->current_blockdata = NULL;
+	r->current_blocklen = 0;
+
+	rval = file_read_block_count(r);
+	if (rval) {
+		avro_reader_free(r->reader);
+		avro_codec_reset(r->codec);
+		avro_freet(struct avro_codec_t_, r->codec);
+		avro_freet(struct avro_file_reader_t_, r);
+		return rval;
+	}
+
+	*reader = r;
+	return rval;
+}
+
 int avro_file_reader_fp(FILE *fp, const char *path, int should_close,
 			avro_file_reader_t * reader)
 {

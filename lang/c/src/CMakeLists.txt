@@ -86,16 +86,9 @@ string(REPLACE ":" "." LIBAVRO_DOT_VERSION ${LIBAVRO_VERSION})
 
 add_library(avro-static STATIC ${AVRO_SRC})
 target_link_libraries(avro-static ${JANSSON_LIBRARIES} ${CODEC_LIBRARIES} ${THREADS_LIBRARIES})
-set_target_properties(avro-static PROPERTIES OUTPUT_NAME avro)
-
-if (NOT WIN32)
-# TODO: Create Windows DLLs. See http://www.cmake.org/Wiki/BuildingWinDLL
-add_library(avro-shared SHARED ${AVRO_SRC})
-target_link_libraries(avro-shared ${JANSSON_LIBRARIES} ${CODEC_LIBRARIES} ${THREADS_LIBRARIES})
-set_target_properties(avro-shared PROPERTIES
-        OUTPUT_NAME avro
-        SOVERSION ${LIBAVRO_DOT_VERSION})
-endif(NOT WIN32)
+set_target_properties(avro-static PROPERTIES 
+        POSITION_INDEPENDENT_CODE ON
+        OUTPUT_NAME avro)
 
 install(FILES
         ${CMAKE_CURRENT_SOURCE_DIR}/avro.h
@@ -112,7 +105,7 @@ install(TARGETS avro-static
         ARCHIVE DESTINATION lib
        )
 else(WIN32)
-install(TARGETS avro-static avro-shared
+install(TARGETS avro-static
         RUNTIME DESTINATION bin
         LIBRARY DESTINATION lib
         ARCHIVE DESTINATION lib
@@ -147,7 +140,6 @@ install(TARGETS avromod RUNTIME DESTINATION bin)
 endif(NOT WIN32)
 
 set_target_properties(avro-static PROPERTIES LINKER_LANGUAGE CXX)
-set_target_properties(avro-shared PROPERTIES LINKER_LANGUAGE CXX)
 set_target_properties(avrocat PROPERTIES LINKER_LANGUAGE CXX)
 set_target_properties(avroappend PROPERTIES LINKER_LANGUAGE CXX)
 set_target_properties(avropipe PROPERTIES LINKER_LANGUAGE CXX)
